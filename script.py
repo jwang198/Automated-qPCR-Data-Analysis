@@ -7,8 +7,23 @@ Created on Tue Jul  7 15:37:14 2015
 """
 import math 
 
+def sampleNameAnalysis(list):
+    sampleName = list[1]
+    indexUnknown = list.index("Unknown")
+    originalWhiteSpaces = 0
+    if indexUnknown > 4:
+        whiteSpaces = indexUnknown - 4
+        originalWhiteSpaces = whiteSpaces
+        sampleName = list[1]
+        next = 1
+        while whiteSpaces > 0: 
+            sampleName = sampleName + "_" + str(list[1+next])
+            whiteSpaces -= 1
+            next += 1
+    return sampleName, originalWhiteSpaces
+
 count = 0
-F1 = open("20150706_qPCRTaqmanYChrom.txt", "rU") #direct output from the qPCR machine
+F1 = open("20150513_qPCRYChrom.txt", "rU") #direct output from the qPCR machine
 
 #skip first 11 header lines
 while count < 11:
@@ -23,7 +38,8 @@ for line in F1:
     list = line.strip().split() 
     if len(list) > 0 and list[0].isdigit() == True: #only sample lines are analyzed
         #Obtaining Sample Name...        
-        sampleName = list[1]
+        sampleName, whiteSpaces = sampleNameAnalysis(list)
+        print sampleName, whiteSpaces
         sampleList.append(sampleName)
         
         #Obtaining Median Cycle Threshold...
@@ -40,12 +56,11 @@ for line in F1:
         unknownIndex = list.index("Unknown")
         detectorEndIndex = unknownIndex - 1
         detectorName = ""
-        for index in xrange(2, detectorEndIndex):
+        for index in xrange(2 + whiteSpaces, detectorEndIndex):
             detectorName = detectorName + list[index]
         primerList.append(detectorName)
 
 F1.close()
-print primerList
 
 uniquePrimers = []
 for primer in primerList:
@@ -73,11 +88,30 @@ def primerAnalysis(masterSampleDictionary, startIndex, F2):
     sortedSample = sorted(masterSampleDictionary)
     primer = sortedSample[startIndex].strip().split(" ")[0]
     print "Current Primer Undergoing Analysis: " + primer
-    numSamples = int(raw_input("How many samples were evaluated using primer " + primer + "?: "))
-    numStandards = int(raw_input("How many standards were evaluated using primer " + primer + "? (e.g. 0, 5, etc.): "))
+    numSamples = 0
+    while True:   
+            try:
+                numSamples = int(raw_input("How many samples were evaluated using primer " + primer + "?: "))
+                break #breaks out of while loop if no error is encountered
+            except ValueError:
+                print "The value type you entered was invalid. Try again!"
+    
+    numStandards = 0
+    while True:   
+        try:
+            numStandards = int(raw_input("How many standards were evaluated using primer " + primer + "?: (e.g. 0, 5, etc.) "))
+            break #breaks out of while loop if no error is encountered
+        except ValueError: 
+            print "The value type you entered was invalid. Try again!"
+
     dilutionFactor = -1
     if numStandards > 0:
-        dilutionFactor = raw_input("By what factor did you dilute the standards?: ")
+        while True:
+            try:
+                dilutionFactor = raw_input("By what factor did you dilute the standards?: ")
+                break #breaks out of while loop if no error is encountered
+            except ValueError: 
+                print "The value type you entered was invalid. Try again!"
         
     #RE-PROMPT TO MAKE SURE USER INPUTS CORRECT VALUE AND AN INTEGER VALUE
     totalSamples = numSamples + numStandards
@@ -170,8 +204,7 @@ def primerAnalysis(masterSampleDictionary, startIndex, F2):
     F2.write("Primer: " + primer + "\n")
     F2.write("Primer Efficiency: " + str(efficiency))
     F2.write("\n") #skip a line
-    F2.write("Sample Name" + "\t" + "Median Ct Value" + "\t" + "Ct Relative to " + baselineSample + "\t" + "Amount Relative to " + baselineSample)
-    
+    F2.write("Sample Name" + "\t" + "Median Ct Value" + "\t" + "Ct Relative to " + baselineSample + "\t" + "Amount Relative to " + baselineSample + "\n")
     for sample in sampleDictionary.keys():
         F2.write(sample + "\t" + str(sampleDictionary[sample][0]) + "\t" + str(relativeToBaseline[sample][0]) + "\t" + str(relativeToBaseline[sample][1]))
         F2.write("\n") #skip a line between each sample 
@@ -182,10 +215,10 @@ F2 = open("output.txt", "w")
 for primer in uniquePrimers:
     totalSamples = primerAnalysis(masterSampleDictionary, startIndex, F2)    
     startIndex += totalSamples  
+    F2.write("\n") #skip a line between each primer
 F2.close()
 print "The qPCR analysis is done! Check 'output.txt' for the results."
 
-    
 
         
         
