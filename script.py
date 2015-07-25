@@ -23,6 +23,7 @@ def sampleNameAnalysis(list):
     return sampleName, originalWhiteSpaces
 
 count = 0
+#fileName = raw_input("What is the file name of your qPCR output txt?: ")
 F1 = open("20150513_qPCRYChrom.txt", "rU") #direct output from the qPCR machine
 
 #skip first 11 header lines
@@ -174,7 +175,7 @@ def primerAnalysis(masterSampleDictionary, startIndex, F2):
         efficiency = float(sum / count)
     if efficiency > 2.0:
         efficiency = 2.0 #set 2 as maximum primer efficiency
-    
+        
     print "Here are the samples you can choose from: " 
     for sample in sampleDictionary.keys():
         startingIndex = sample.index(" ") + 1
